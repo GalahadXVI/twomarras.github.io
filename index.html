@@ -1,45 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Two Marras - Making Collectibles Accessible</title>
-    <meta name="description" content="Two Marras - Helping TCG fans get Pokemon cards before scalpers. Follow us for real-time stock alerts." />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hurricane&display=swap" rel="stylesheet">
-    <style>
-      .blurred-bg {
-        position: absolute;
-        top: -100px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 900px;
-        height: 400px;
-        background: radial-gradient(circle at 60% 40%, #ff8800 0%, #ff6600 20%, transparent 100%);
-        filter: blur(80px);
-        opacity: 0.2;
-        z-index: 0;
-      }
-      .signature {
-        font-family: 'Hurricane', cursive;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-950 text-white flex flex-col items-center justify-center relative">
-    <div class="blurred-bg"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Two Marras — Making trading card games accessible</title>
+  <meta name="description" content="Two Marras is a software company building products that make trading card games accessible — real-time stock intelligence and fair-access tooling for collectors and players." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a09;
+      --panel: #0f0f0e;
+      --line: rgba(242, 240, 235, 0.10);
+      --line-strong: rgba(242, 240, 235, 0.22);
+      --ink: #f2f0eb;
+      --muted: #8b8880;
+      --accent: #f2f0eb;
+      --mono: "Geist Mono", ui-monospace, monospace;
+      --sans: "Archivo", sans-serif;
+    }
 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    <div class="py-24">
-        <div class="mx-auto max-w-2xl px-6  lg:px-8 w-full">
-          <h2 class="text-center text-base/7 font-semibold text-orange-400">Two Marras</h2>
-          <p class="mx-auto mt-2 max-w-lg text-center text-4xl font-semibold tracking-tight text-balance text-gray-100 sm:text-5xl">Coming Soon</p>
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--accent); color: var(--bg); }
+
+    /* ambient dot grid — flat SVG pattern, no gradients */
+    .field {
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23f2f0eb' fill-opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* film grain, flat noise — pre-tiled so the filter renders once */
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.5;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+    }
+
+    .frame {
+      position: relative;
+      z-index: 1;
+      max-width: 1120px;
+      margin: 0 auto;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---------- header ---------- */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 40px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .wordmark {
+      font-weight: 600;
+      font-variation-settings: "wdth" 118;
+      letter-spacing: 0.04em;
+      font-size: 15px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .wordmark .glyph {
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--accent);
+      transform: rotate(45deg);
+      position: relative;
+      flex: none;
+    }
+    .wordmark .glyph::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      background: var(--accent);
+    }
+
+    .status {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+    }
+
+    .status .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    /* ---------- hero ---------- */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: center;
+      gap: 40px;
+      padding: 96px 40px 104px;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+
+    .kicker {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .kicker::before {
+      content: "";
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-weight: 500;
+      font-variation-settings: "wdth" 112;
+      font-size: clamp(42px, 6.2vw, 74px);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--ink);
+    }
+
+    .sub {
+      margin-top: 30px;
+      max-width: 46ch;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    .sub strong { color: var(--ink); font-weight: 500; }
+
+    .hero-cta {
+      margin-top: 44px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border: 1px solid var(--line-strong);
+      padding: 12px 18px;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+    .badge::before, .badge::after {
+      content: "+";
+      position: absolute;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .badge::before { top: -6px; left: -4px; }
+    .badge::after { bottom: -6px; right: -4px; }
+    .badge .tick {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      flex: none;
+    }
+
+    .defn {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 34ch;
+    }
+    .defn i { color: var(--ink); font-style: normal; }
+
+    /* ---------- card fan ---------- */
+    .deck {
+      position: relative;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      position: absolute;
+      width: 200px;
+      height: 280px;
+      background: var(--panel);
+      border: 1px solid var(--line-strong);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transform-origin: 50% 120%;
+      animation: float 7s ease-in-out infinite;
+    }
+
+    .card .art {
+      height: 120px;
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .card .art::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 54px;
+      height: 54px;
+      border: 1px solid var(--line-strong);
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+    .card .art::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background: var(--line);
+    }
+
+    .card .rows { display: grid; gap: 6px; }
+    .card .rows span { display: block; height: 1px; background: var(--line); }
+    .card .rows span:nth-child(1) { width: 100%; }
+    .card .rows span:nth-child(2) { width: 72%; }
+    .card .rows span:nth-child(3) { width: 85%; }
+
+    .card.c1 { transform: rotate(-14deg) translateX(-96px) translateY(10px); animation-delay: -2s; }
+    .card.c3 { transform: rotate(14deg) translateX(96px) translateY(10px); animation-delay: -4s; }
+    .card.c2 {
+      border-color: var(--accent);
+      color: var(--ink);
+      z-index: 2;
+      transform: translateY(-8px);
+    }
+    .card.c2 .art::before { border-color: var(--accent); }
+    .card.c2 .art::after { background: var(--accent); }
+    .card.c2 .head b { color: var(--accent); font-weight: 500; }
+
+    .card .head { display: flex; justify-content: space-between; }
+
+    @keyframes float {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -8px; }
+    }
+
+    /* ---------- principles ---------- */
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .cell {
+      padding: 44px 40px 52px;
+      border-right: 1px solid var(--line);
+      transition: background 0.35s ease;
+    }
+    .cell:last-child { border-right: none; }
+    .cell:hover { background: var(--panel); }
+
+    .cell .num {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 22px;
+    }
+
+    .cell h2 {
+      font-weight: 500;
+      font-variation-settings: "wdth" 110;
+      font-size: 19px;
+      letter-spacing: -0.01em;
+      margin-bottom: 12px;
+    }
+
+    .cell p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 300;
+      max-width: 32ch;
+    }
+
+    /* ---------- footer ---------- */
+    footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 26px 40px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    footer .co { text-transform: uppercase; }
+    footer .site { color: var(--ink); }
+
+    /* ---------- load reveal ---------- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .d1 { animation-delay: 0.05s; }
+    .d2 { animation-delay: 0.18s; }
+    .d3 { animation-delay: 0.31s; }
+    .d4 { animation-delay: 0.44s; }
+    .d5 { animation-delay: 0.57s; }
+    .d6 { animation-delay: 0.70s; }
+
+    @keyframes rise {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { animation: none; opacity: 1; transform: none; }
+      .card, .status .dot { animation: none; }
+    }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding: 72px 28px 80px; gap: 72px; }
+      .deck { height: 340px; }
+      .grid3 { grid-template-columns: 1fr; }
+      .cell { border-right: none; border-bottom: 1px solid var(--line); }
+      .cell:last-child { border-bottom: none; }
+      header, footer { padding-left: 28px; padding-right: 28px; }
+      .cell { padding: 36px 28px 44px; }
+      footer { justify-content: center; text-align: center; }
+    }
+
+    @media (max-width: 480px) {
+      .card { width: 164px; height: 232px; }
+      .card.c1 { transform: rotate(-14deg) translateX(-72px) translateY(10px); }
+      .card.c3 { transform: rotate(14deg) translateX(72px) translateY(10px); }
+      .status span.label { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="field" aria-hidden="true"></div>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="frame">
+    <header class="reveal d1">
+      <div class="wordmark"><span class="glyph"></span><span class="sr-only">Two Marras</span></div>
+      <div class="status"><span class="dot" aria-hidden="true"></span><span class="label">Systems&nbsp;·&nbsp;Building</span><span>EST&nbsp;2025</span></div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="kicker reveal d2">For the love of the game</p>
+        <h1 class="reveal d3">Trading card games, <em>accessible</em> to everyone.</h1>
+        <p class="sub reveal d4">We build tools that give real collectors <strong>a fair shot at every drop</strong> — not bots, not scalpers.</p>
+        <div class="hero-cta reveal d5">
+          <span class="badge"><span class="tick" aria-hidden="true"></span>First product — coming soon</span>
+          <p class="defn"><i>marra</i> /ˈma-ra/ n. — Northern. A trusted friend; a workmate who has your back.</p>
         </div>
-    </div>
+      </div>
 
-    <footer class="relative z-10 w-full max-w-6xl mx-auto px-6 pb-8 font-medium text-center text-gray-600 text-sm mt-auto">
-      &copy; 2025 - 2026 Two Marras Ltd. Company No. 16399077
+      <div class="deck reveal d4" aria-hidden="true">
+        <div class="card c1">
+          <div class="head"><span>MRA·01</span><span>◇</span></div>
+          <div class="art"></div>
+          <div class="rows"><span></span><span></span><span></span></div>
+        </div>
+        <div class="card c3">
+          <div class="head"><span>MRA·03</span><span>◇</span></div>
+          <div class="art"></div>
+          <div class="rows"><span></span><span></span><span></span></div>
+        </div>
+        <div class="card c2">
+          <div class="head"><span>MRA·02</span><b>◆</b></div>
+          <div class="art"></div>
+          <div class="rows"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid3 reveal d5">
+      <div class="cell">
+        <span class="num">01 /</span>
+        <h2>Live stock intelligence</h2>
+        <p>Restocks and drops surfaced the moment they happen — signal, not noise.</p>
+      </div>
+      <div class="cell">
+        <span class="num">02 /</span>
+        <h2>Fair access, by design</h2>
+        <p>Tooling built for real collectors and players, never for bots or resellers.</p>
+      </div>
+      <div class="cell">
+        <span class="num">03 /</span>
+        <h2>Collector-first, always</h2>
+        <p>Made by two marras who queued outside the shops too. We get it.</p>
+      </div>
+    </section>
+
+    <footer class="reveal d6">
+      <span class="co">&copy; 2025–2026 Two Marras Ltd &nbsp;·&nbsp; Company No. 16399077</span>
+      <span class="site">twomarras.com</span>
     </footer>
-  </body>
-</html> 
+  </div>
+</body>
+</html>
